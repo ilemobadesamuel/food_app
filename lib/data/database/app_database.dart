@@ -27,7 +27,8 @@ class Recipes extends Table {
 
 @DriftDatabase(tables: [Users, Recipes])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(driftDatabase(name: 'food_app_database'));
+  AppDatabase([QueryExecutor? executor])
+    : super(executor ?? driftDatabase(name: 'food_app_database'));
 
   @override
   int get schemaVersion => 2;

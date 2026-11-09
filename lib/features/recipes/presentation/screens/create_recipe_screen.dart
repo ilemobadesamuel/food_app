@@ -1,9 +1,11 @@
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/model/recipe.dart';
-import '../../recipe_dependencies.dart';
+import '../providers/recipe_providers.dart';
 
-class CreateRecipeScreen extends StatefulWidget {
+class CreateRecipeScreen extends ConsumerStatefulWidget {
   final Recipe? recipe;
 
   const CreateRecipeScreen({super.key, this.recipe});
@@ -11,10 +13,11 @@ class CreateRecipeScreen extends StatefulWidget {
   bool get isEditing => recipe != null;
 
   @override
-  State<CreateRecipeScreen> createState() => _CreateRecipeScreenState();
+  ConsumerState<CreateRecipeScreen> createState() =>
+      _CreateRecipeScreenState();
 }
 
-class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
+class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
   late final TextEditingController creatorNameController;
   late final TextEditingController titleController;
   late final TextEditingController descriptionController;
@@ -28,17 +31,15 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     creatorNameController = TextEditingController(
       text: widget.recipe?.creatorName ?? '',
     );
-
-    titleController = TextEditingController(text: widget.recipe?.title ?? '');
-
+    titleController = TextEditingController(
+      text: widget.recipe?.title ?? '',
+    );
     descriptionController = TextEditingController(
       text: widget.recipe?.description ?? '',
     );
-
     ingredientsController = TextEditingController(
       text: widget.recipe?.ingredients ?? '',
     );
-
     instructionsController = TextEditingController(
       text: widget.recipe?.instructions ?? '',
     );
@@ -72,7 +73,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
         creatorName: creatorName,
       );
 
-      await RecipeDependencies.recipeService.updateRecipe(updatedRecipe);
+      await ref.read(recipeServiceProvider).updateRecipe(updatedRecipe);
     } else {
       final recipe = Recipe(
         title: title,
@@ -82,7 +83,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
         creatorName: creatorName,
       );
 
-      await RecipeDependencies.recipeService.addRecipe(recipe);
+      await ref.read(recipeServiceProvider).addRecipe(recipe);
     }
 
     if (!mounted) return;
@@ -115,7 +116,9 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
 
     if (shouldDelete != true) return;
 
-    await RecipeDependencies.recipeService.deleteRecipe(widget.recipe!.id!);
+    await ref.read(recipeServiceProvider).deleteRecipe(
+          widget.recipe!.id!,
+        );
 
     if (!mounted) return;
 
@@ -145,7 +148,6 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
             ),
         ],
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -159,9 +161,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 16),
-
             TextField(
               controller: titleController,
               decoration: const InputDecoration(
@@ -169,9 +169,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 16),
-
             TextField(
               controller: descriptionController,
               decoration: const InputDecoration(
@@ -179,9 +177,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 16),
-
             TextField(
               controller: ingredientsController,
               maxLines: 5,
@@ -190,9 +186,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 16),
-
             TextField(
               controller: instructionsController,
               maxLines: 6,
@@ -201,14 +195,14 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 30),
-
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: saveRecipe,
-                child: Text(widget.isEditing ? 'UPDATE RECIPE' : 'SAVE RECIPE'),
+                child: Text(
+                  widget.isEditing ? 'UPDATE RECIPE' : 'SAVE RECIPE',
+                ),
               ),
             ),
           ],

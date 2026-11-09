@@ -1,60 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../recipe_dependencies.dart';
 import '../../domain/model/recipe.dart';
+import '../providers/recipe_providers.dart';
 import 'create_recipe_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  late Future<List<Recipe>> _recipesFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadRecipes();
-  }
-
-  void _loadRecipes() {
-    _recipesFuture = RecipeDependencies.recipeService.getRecipes();
-  }
-
-  Future<void> _openRecipe(Recipe recipe) async {
+  Future<void> _openRecipe(
+    BuildContext context,
+    WidgetRef ref,
+    Recipe recipe,
+  ) async {
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => CreateRecipeScreen(recipe: recipe)),
     );
 
-    if (!mounted) return;
-
-    setState(() {
-      _loadRecipes();
-    });
+    ref.invalidate(recipesProvider);
   }
 
-  Future<void> _createRecipe() async {
+  Future<void> _createRecipe(BuildContext context, WidgetRef ref) async {
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const CreateRecipeScreen()),
     );
 
-    if (!mounted) return;
-
-    setState(() {
-      _loadRecipes();
-    });
+    ref.invalidate(recipesProvider);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recipesAsync = ref.watch(recipesProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFFDF8),
-
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFFDF8),
         elevation: 0,
@@ -63,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -73,42 +53,27 @@ class _HomeScreenState extends State<HomeScreen> {
               'Your Kitchen 👋',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 10),
-
             const Text(
               'Ready to cook something?',
               style: TextStyle(fontSize: 16),
             ),
-
             const SizedBox(height: 40),
-
             const Text(
               'Your Recipes',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 20),
-
             Expanded(
-              child: FutureBuilder<List<Recipe>>(
-                future: _recipesFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        'Something went wrong:\n${snapshot.error}',
-                        textAlign: TextAlign.center,
-                      ),
-                    );
-                  }
-
-                  final recipes = snapshot.data ?? [];
-
+              child: recipesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stackTrace) => Center(
+                  child: Text(
+                    'Something went wrong:\n$error',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                data: (recipes) {
                   if (recipes.isEmpty) {
                     return const Center(
                       child: Text(
@@ -132,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Icons.arrow_forward_ios,
                             size: 16,
                           ),
-                          onTap: () => _openRecipe(recipe),
+                          onTap: () => _openRecipe(context, ref, recipe),
                         ),
                       );
                     },
@@ -143,11 +108,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        onPressed: _createRecipe,
+        onPressed: () => _createRecipe(context, ref),
         child: const Icon(Icons.add),
       ),
     );
